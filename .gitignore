@@ -13,3 +13,6 @@
 /nbproject/private/
 Makefile
 /build/CMakeFiles/
+
+# Compiled python files
+*.pyc
