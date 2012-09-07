@@ -15,7 +15,12 @@
 #if defined __cplusplus
 #    define __STDC_CONSTANT_MACROS
 #endif
+
 #include <stdint.h>
+
+#ifndef UINT64_C
+#define UINT64_C(c) (c ## ULL)
+#endif
 
 extern "C" {
 
@@ -37,12 +42,18 @@ extern "C" {
 extern video_decoder_config_t vec;
 }
 
-#define NB_DRIVER_POST_STAGES   10
 
-extern navdata_vision_detect_t navdata_detect;
-extern navdata_phys_measures_t navdata_phys;
-extern navdata_demo_t navdata;
-extern navdata_time_t arnavtime;
+#define NB_DRIVER_POST_STAGES   10
+extern navdata_vision_detect_t shared_navdata_detect;
+extern navdata_phys_measures_t shared_navdata_phys;
+extern navdata_demo_t shared_navdata;
+extern navdata_time_t shared_arnavtime;
+extern navdata_pressure_raw_t shared_navdata_pressure;
+extern navdata_magneto_t shared_navdata_magneto;
+extern navdata_wind_speed_t shared_navdata_wind;
+
+extern vp_os_mutex_t navdata_lock;
+extern vp_os_mutex_t video_lock;
 
 extern int32_t should_exit;
 
