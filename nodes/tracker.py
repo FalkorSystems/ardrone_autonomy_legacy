@@ -122,7 +122,7 @@ class LkTracker:
 #        cv2.imshow( 'sat', hsv_split[1] )
 #        cv2.imshow( 'vol', hsv_split[2] )
         
-#        cv2.imshow( 'gray', self.frame_gray )
+        cv2.imshow( 'gray', self.frame_gray )
 #        cv2.imshow( 'hsv_mask', self.hsv_mask )
 
     def runOpticalFlow( self ):
@@ -214,7 +214,6 @@ class LkTracker:
             imageSize = self.frame.shape
             imageArea = imageSize[0]*imageSize[1]
 
-            print area, imageArea
 
             xRel = cx*100/imageSize[1]
             yRel = cy*100/imageSize[0]
