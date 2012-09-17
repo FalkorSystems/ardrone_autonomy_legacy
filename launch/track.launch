@@ -4,7 +4,12 @@
   <node name="image_view_raw" pkg="image_view" type="image_view">
     <remap from="image" to="/ardrone/front/image_raw" />
   </node>
+
+  <node name="ardrone_teleop_joy" pkg="ardrone_autonomy" type="ardrone_teleop_joy.py" />
+
+  <param name="joy_node/dev" value="/dev/input/js1" />
+  <node name="joy_node" pkg="joy" type="joy_node" />
   <node name="record" pkg="rosbag" type="record" args="-e /ardrone/front/image_raw" />
-  <node pkg="rxtools" type="rxplot" name="plot_cmd" args="/cmd_vel/linear/x:z,/cmd_vel/angular/z" />
+  <node pkg="rxtools" type="rxplot" name="plot_cmd" args="/cmd_vel/linear/x:y:z,/cmd_vel/angular/z" />
   <node pkg="rxtools" type="rxplot" name="plot_pos" args="/ardrone_tracker/found_point/x:y:z" />
 </launch>
