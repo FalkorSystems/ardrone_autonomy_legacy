@@ -5,6 +5,7 @@ if the tracker does not find an object then it will return None
 """
 
 import numpy as np
+import math
 import cv2
 
 lk_params = dict( winSize = ( 30, 30 ),
@@ -21,7 +22,7 @@ class dummyTracker:
     def track( self, frame ):
         (y,x,n) = frame.shape
         cv2.imshow( 'Dummy', frame )
-        return( x/2, y/2, x*y/2 )
+        return( 50, 50, 50 )
 
 class LkTracker:
     def __init__(self):
@@ -210,7 +211,15 @@ class LkTracker:
 
         cv2.imshow( 'LKTracker', vis )
         if len( self.tracks ) > 2:
-            return cx,cy,area
+            imageSize = self.frame.shape
+            imageArea = imageSize[0]*imageSize[1]
+
+            print area, imageArea
+
+            xRel = cx*100/imageSize[1]
+            yRel = cy*100/imageSize[0]
+            areaRel = math.sqrt( float( area ) / float( imageArea ) ) * 100
+            return xRel,yRel,areaRel
         else:
             return None
 

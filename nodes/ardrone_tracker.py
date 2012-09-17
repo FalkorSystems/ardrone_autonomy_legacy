@@ -6,6 +6,7 @@ import sys
 import rospy
 import cv
 import cv2
+import math
 
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
@@ -33,20 +34,15 @@ class ardroneTracker:
   
     numpy_image = np.asarray( cv_image )
     trackData = self.tracker.track( numpy_image )
-    imagesize = numpy_image.shape
-    imagearea = imagesize[1]*imagesize[0]
-
-    imagesize = (50,50)
-    imagearea = 1000
-
     if trackData:
-        x = trackData[0] *100/ imagesize[1]
-        y = trackData[1] *100/ imagesize[0]
-        z = trackData[2] *100/ imagearea
-        point = Point( x, y, z )
-        self.point_pub.publish( point )
+      areaGoal = 20.0
+
+      x,y,z = trackData[0],trackData[1],trackData[2]/areaGoal*50
+
+      point = Point( x,y,z )
+      self.point_pub.publish( point )
     else:
-        self.point_pub.publish( Point( 0, 0, -1 ) )
+      self.point_pub.publish( Point( 0, 0, -1 ) )
 
     cv2.waitKey( 10 )
 

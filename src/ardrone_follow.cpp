@@ -82,7 +82,7 @@ public:
     : current_cmd_(),
       xPid( 0.01, 0.0, 0.0 ), // pos
       yPid( 0.01, 0.0, 0.0 ), // pos
-      zPid( -0.005, 0.0, 0.0 ) // neg
+      zPid( 0.01, 0.0, 0.0 ) // pos
   {
     navdata_ = nh_.subscribe( "ardrone/navdata", 1000, &ArdroneFollow::navdataCb, this );
     tracker_ = nh_.subscribe( "ardrone_tracker/found_point", 1, &ArdroneFollow::foundpointCb, this );
@@ -146,7 +146,8 @@ public:
       {
 	// Rotate
 	current_cmd_ = geometry_msgs::Twist();
-	current_cmd_.angular.z = 1.0 / SCALE;
+	//	current_cmd_.angular.z = 1.0 / SCALE;
+	//current_cmd_.angular.z = 0.0
       }
     else
       {
@@ -221,7 +222,7 @@ int main( int argc, char **argv )
 
   // Launch
   spinner.start();
-  sleep( 60 ); // 5 minutes
+  sleep( 300 ); // 5 minutes
 
   // Land
   puts( "land" );
