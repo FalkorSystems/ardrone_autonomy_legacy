@@ -1,14 +1,14 @@
 <package>
   <description brief="ardrone_autonomy">
 
-     TBA.
+    Falkor's fork of AutonomyLab's ardrone_autonomy
 
   </description>
-  <author>Mani Monajjemi</author>
-  <email>mmonajje@cs.sfu.ca</email>
+  <author>Sameer Parekh</author>
+  <email>sameer@falkorsystems.com</email>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>https://github.com/AutonomyLab/ardrone_autonomy</url>
+  <url>https://github.com/FalkorSystems/ardrone_autonomy</url>
   <rosdep name="libsdl-dev" />
   <depend package="roscpp"/>
   <depend package="image_transport"/>
