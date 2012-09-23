@@ -122,8 +122,25 @@ class LkTracker:
 #        cv2.imshow( 'sat', hsv_split[1] )
 #        cv2.imshow( 'vol', hsv_split[2] )
         
-#        cv2.imshow( 'gray', self.frame_gray )
+        cv2.imshow( 'gray', self.frame_gray )
 #        cv2.imshow( 'hsv_mask', self.hsv_mask )
+
+    def filterOutliers( self, tracks ):
+        pts = np.int32( [ tr[-1] for tr in tracks ] )
+        if pts.size < 10: # 5 pts (10 bc x/y)
+            return tracks
+
+        x_median = np.median( pts[:,0] )
+        y_median = np.median( pts[:,1] )
+
+        distances = ( np.square(pts[:,0] - x_median) +
+                      np.square(pts[:,1] - y_median) )
+        distance_median = np.median( distances )
+
+        new_tracks = [ tr for (i,tr) in enumerate( tracks )
+                       if distances[i] < distance_median * 9 ]
+
+        return new_tracks
 
     def runOpticalFlow( self ):
         if len(self.tracks) > 0:
@@ -143,8 +160,10 @@ class LkTracker:
                     del tr[0]
                     
                 new_tracks.append(tr)
+
+            
                 
-            self.tracks = new_tracks
+            self.tracks = self.filterOutliers( new_tracks )
     
     def reDetect( self ):
         if self.frame_idx % self.detect_interval == 0 and len(self.tracks) > 0:
@@ -160,9 +179,14 @@ class LkTracker:
                 ellipse_tracked = cv2.minAreaRect( pts )
 
             boundingRect = cv2.boundingRect( pts )
-            x0,y0,x1,y1 = ( boundingRect[0], boundingRect[1],
-                            boundingRect[0] + boundingRect[2],
-                            boundingRect[1] + boundingRect[3] )
+            # x0,y0,x1,y1 = ( boundingRect[0] - int(boundingRect[2] * 0.05),
+            #                 boundingRect[1] - int(boundingRect[3] * 0.05),
+            #                 boundingRect[0] + int(boundingRect[2] * 1.05),
+            #                 boundingRect[1] + int(boundingRect[3] * 1.05))
+            x0,y0,x1,y1 = ( boundingRect[0] - 1,
+                            boundingRect[1] - 1,
+                            boundingRect[0] + boundingRect[2] + 1,
+                            boundingRect[1] + boundingRect[3] + 1 )
             
             if len( pts ) > 2:
                 cv2.rectangle( mask_tracked, (x0,y0), (x1,y1), 255, -1 )
@@ -213,7 +237,6 @@ class LkTracker:
         if len( self.tracks ) > 2:
             imageSize = self.frame.shape
             imageArea = imageSize[0]*imageSize[1]
-
 
             xRel = cx*100/imageSize[1]
             yRel = cy*100/imageSize[0]
