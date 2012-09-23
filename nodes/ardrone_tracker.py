@@ -55,6 +55,7 @@ def main():
   rospy.init_node( 'ardrone_tracker' )
   ardroneTracker(tracker.LkTracker)
 #  ardroneTracker(tracker.dummyTracker)
+#  ardroneTracker( tracker.faceTracker )
   try:
     rospy.spin()
   except KeyboardInterrupt:

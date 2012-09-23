@@ -18,6 +18,57 @@ feature_params = dict( maxCorners = 50,
                        minDistance = 10,
                        blockSize = 10 )
 
+class faceTracker:
+    def __init__( self ):
+        self.cascade = cv2.CascadeClassifier(
+            '/usr/local/share/OpenCV/haarcascades/haarcascade_frontalface_alt.xml' )
+        
+        self.grayscale = None
+
+    def track( self, frame ):
+        copied_frame = frame.copy()
+        detectedFace = self.detectObject( copied_frame )
+        if detectedFace == None:
+            return None
+
+        imageSize = frame.shape
+        imageArea = imageSize[0]*imageSize[1]
+
+        area = detectedFace[2] * detectedFace[3]
+        cx = detectedFace[0] + detectedFace[2]/2
+        cy = detectedFace[1] + detectedFace[3]/2
+
+        xRel = cx*100/imageSize[1]
+        yRel = cy*100/imageSize[0]
+        areaRel = math.sqrt( float( area ) / float( imageArea ) ) * 100 * 2
+        
+
+#        print (xRel,yRel,areaRel)
+        return xRel,yRel,areaRel
+	
+    def detectObject(self, frame ):
+        grayscale = cv2.cvtColor( frame, cv2.COLOR_BGR2GRAY )
+        grayscale = cv2.equalizeHist( grayscale )
+        cv2.imshow( 'gray', grayscale )
+        faces = self.cascade.detectMultiScale( grayscale, scaleFactor=1.3,
+                                               minNeighbors=4, minSize=(15, 15),
+                                               flags = cv2.cv.CV_HAAR_SCALE_IMAGE)
+
+        if len( faces ) > 0:
+            for i in faces:
+                cv2.rectangle(frame,
+                              ( int(i[0]), int(i[1]) ),
+                              ( int(i[0]+i[2]), int(i[1]+i[3]) ),
+                              cv2.cv.CV_RGB(0,255,0), 3, 8, 0)
+
+
+        cv2.imshow( "faces", frame )
+
+        if len( faces ) > 0:
+            return faces[0]
+        else:
+            return None
+
 class dummyTracker:
     def track( self, frame ):
         (y,x,n) = frame.shape

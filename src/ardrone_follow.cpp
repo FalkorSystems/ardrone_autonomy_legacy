@@ -17,9 +17,12 @@ class PidControl
   double preError_;
   double integral_;
 
+  double outputLimit_;
+
 public:
-  PidControl( double Kp, double Ti, double Td ) : Kp_( Kp ), Ti_( Ti ), Td_( Td ),
-							    preError_( 0.0 ), integral_( 0.0 )
+  PidControl( double Kp, double Ti, double Td, double outputLimit ) :
+    Kp_( Kp ), Ti_( Ti ), Td_( Td ), outputLimit_( outputLimit ),
+    preError_( 0.0 ), integral_( 0.0 )
   {
   }
 
@@ -52,8 +55,12 @@ public:
     preError_ = error;
 
     double TiRecip = ( Ti_ == 0.0 ) ? 0 : 1/Ti_;
-    
-    return( Kp_ * ( error + TiRecip * integral_ + Td_ * derivative ) );
+    double output = Kp_ * ( error + TiRecip * integral_ + Td_ * derivative );
+
+    double limitedOutput = fmin( fmax( output, -outputLimit_ ),
+				 outputLimit_ );
+ 
+    return( limitedOutput );
   }
 };
 
@@ -80,9 +87,9 @@ class ArdroneFollow
 public:
   ArdroneFollow()
     : current_cmd_(),
-      xPid( 0.01, 0.0, 0.0 ), // pos
-      yPid( 0.01, 0.0, 0.0 ), // pos
-      zPid( 0.01, 0.0, 0.0 ) // pos
+      xPid( 0.01, 0.0, 0.0, 1.0 ), // pos
+      yPid( 0.01, 0.0, 0.0, 1.0 ), // pos
+      zPid( 0.005, 0.0, 0.0, 1.0 ) // pos
   {
     navdata_ = nh_.subscribe( "ardrone/navdata", 1000, &ArdroneFollow::navdataCb, this );
     tracker_ = nh_.subscribe( "ardrone_tracker/found_point", 1, &ArdroneFollow::foundpointCb, this );

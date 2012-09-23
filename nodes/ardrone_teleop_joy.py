@@ -14,7 +14,6 @@ class ardroneTeleopJoy:
         self.land_pub = rospy.Publisher( "/ardrone/land", Empty )
         self.takeoff_pub = rospy.Publisher( "/ardrone/takeoff", Empty )
         self.reset_pub = rospy.Publisher( "/ardrone/reset", Empty )
-
         self.joy_sub = rospy.Subscriber( "/joy", Joy, self.callback )
 
     def callback( self, data ):
