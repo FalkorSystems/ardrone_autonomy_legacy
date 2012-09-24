@@ -18,58 +18,7 @@ feature_params = dict( maxCorners = 50,
                        minDistance = 10,
                        blockSize = 10 )
 
-class faceTracker:
-    def __init__( self ):
-        self.cascade = cv2.CascadeClassifier(
-            '/usr/local/share/OpenCV/haarcascades/haarcascade_frontalface_alt.xml' )
-        
-        self.grayscale = None
-
-    def track( self, frame ):
-        copied_frame = frame.copy()
-        detectedFace = self.detectObject( copied_frame )
-        if detectedFace == None:
-            return None
-
-        imageSize = frame.shape
-        imageArea = imageSize[0]*imageSize[1]
-
-        area = detectedFace[2] * detectedFace[3]
-        cx = detectedFace[0] + detectedFace[2]/2
-        cy = detectedFace[1] + detectedFace[3]/2
-
-        xRel = cx*100/imageSize[1]
-        yRel = cy*100/imageSize[0]
-        areaRel = math.sqrt( float( area ) / float( imageArea ) ) * 100 * 2
-        
-
-#        print (xRel,yRel,areaRel)
-        return xRel,yRel,areaRel
-	
-    def detectObject(self, frame ):
-        grayscale = cv2.cvtColor( frame, cv2.COLOR_BGR2GRAY )
-        grayscale = cv2.equalizeHist( grayscale )
-        cv2.imshow( 'gray', grayscale )
-        faces = self.cascade.detectMultiScale( grayscale, scaleFactor=1.3,
-                                               minNeighbors=4, minSize=(15, 15),
-                                               flags = cv2.cv.CV_HAAR_SCALE_IMAGE)
-
-        if len( faces ) > 0:
-            for i in faces:
-                cv2.rectangle(frame,
-                              ( int(i[0]), int(i[1]) ),
-                              ( int(i[0]+i[2]), int(i[1]+i[3]) ),
-                              cv2.cv.CV_RGB(0,255,0), 3, 8, 0)
-
-
-        cv2.imshow( "faces", frame )
-
-        if len( faces ) > 0:
-            return faces[0]
-        else:
-            return None
-
-class dummyTracker:
+class DummyTracker:
     def track( self, frame ):
         (y,x,n) = frame.shape
         cv2.imshow( 'Dummy', frame )
@@ -145,8 +94,10 @@ class LkTracker:
         
     def pickFeatures(self):
         mask = np.zeros_like( self.frame_gray )
+#        import pdb; pdb.set_trace()
+
         cv2.rectangle( mask, tuple( self.userRect[0] ), tuple( self.userRect[1] ), 255, -1 )
-#        cv2.imshow( 'userMask', mask )
+        cv2.imshow( 'userMask', mask )
 
         p = cv2.goodFeaturesToTrack( self.frame_gray, mask = mask, **feature_params )
         if p is not None:
@@ -176,10 +127,10 @@ class LkTracker:
         cv2.imshow( 'gray', self.frame_gray )
 #        cv2.imshow( 'hsv_mask', self.hsv_mask )
 
-    def filterOutliers( self, tracks ):
-        pts = np.int32( [ tr[-1] for tr in tracks ] )
+    def filterOutliers( self, deviations ):
+        pts = np.int32( [ tr[-1] for tr in self.tracks ] )
         if pts.size < 10: # 5 pts (10 bc x/y)
-            return tracks
+            return
 
         x_median = np.median( pts[:,0] )
         y_median = np.median( pts[:,1] )
@@ -188,10 +139,9 @@ class LkTracker:
                       np.square(pts[:,1] - y_median) )
         distance_median = np.median( distances )
 
-        new_tracks = [ tr for (i,tr) in enumerate( tracks )
-                       if distances[i] < distance_median * 9 ]
-
-        return new_tracks
+        self.tracks = [ tr for (i,tr) in enumerate( self.tracks )
+                        if distances[i] < distance_median *
+                        np.square( deviations ) ]
 
     def runOpticalFlow( self ):
         if len(self.tracks) > 0:
@@ -211,17 +161,18 @@ class LkTracker:
                     del tr[0]
                     
                 new_tracks.append(tr)
-
             
-                
-            self.tracks = self.filterOutliers( new_tracks )
-    
-    def reDetect( self ):
+            self.tracks = new_tracks
+                    
+    def reDetect( self, use_camshift = True, expand_pixels = 1 ):
         if self.frame_idx % self.detect_interval == 0 and len(self.tracks) > 0:
-            mask_camshift = np.zeros_like( self.frame_gray )
-            mask_tracked = np.zeros_like( self.frame_gray )
 
-            ellipse_camshift = self.getCamShift()
+            if use_camshift:
+                mask_camshift = np.zeros_like( self.frame_gray )
+                ellipse_camshift = self.getCamShift()
+                cv2.ellipse( mask_camshift, ellipse_camshift, 255, -1 )
+
+            mask_tracked = np.zeros_like( self.frame_gray )
             pts = np.int32( [ [tr[-1]] for tr in self.tracks ] )
 
             if len(pts) > 5:
@@ -234,21 +185,25 @@ class LkTracker:
             #                 boundingRect[1] - int(boundingRect[3] * 0.05),
             #                 boundingRect[0] + int(boundingRect[2] * 1.05),
             #                 boundingRect[1] + int(boundingRect[3] * 1.05))
-            x0,y0,x1,y1 = ( boundingRect[0] - 1,
-                            boundingRect[1] - 1,
-                            boundingRect[0] + boundingRect[2] + 1,
-                            boundingRect[1] + boundingRect[3] + 1 )
+
+
+            x0,y0,x1,y1 = ( boundingRect[0] - expand_pixels,
+                            boundingRect[1] - expand_pixels,
+                            boundingRect[0] + boundingRect[2] + expand_pixels,
+                            boundingRect[1] + boundingRect[3] + expand_pixels )
             
             if len( pts ) > 2:
                 cv2.rectangle( mask_tracked, (x0,y0), (x1,y1), 255, -1 )
 
-            cv2.ellipse( mask_camshift, ellipse_camshift, 255, -1 )
             cv2.ellipse( mask_tracked, ellipse_tracked, 255, -1 )
 
 #            cv2.imshow( 'mask_camshift', mask_camshift )
 #            cv2.imshow( 'mask_tracked', mask_tracked )
 
-            mask = mask_camshift & mask_tracked
+            if use_camshift:
+                mask = mask_camshift & mask_tracked
+            else:
+                mask = mask_tracked
 
             for x, y in [np.int32(tr[-1]) for tr in self.tracks]:
                 cv2.circle(mask, (x,y), 5, 0, -1 )
@@ -299,6 +254,8 @@ class LkTracker:
     def track(self, frame):
         self.initializeFrame( frame )
         self.runOpticalFlow()
+        self.filterOutliers( 3 )
+
         self.reDetect()
         trackData = self.drawAndGetTrack()
 
@@ -307,12 +264,81 @@ class LkTracker:
 
         return trackData
 
+class CascadeTracker( LkTracker ):
+    def __init__( self, cascadeFn ):
+        self.cascade = cv2.CascadeClassifier( cascadeFn )
+
+        LkTracker.__init__( self )
+
+    def initCamshift( self ):
+        pass
+
+    def track( self, frame ):
+        self.frame = frame # cv2.pyrDown( frame )
+        self.frame_gray = cv2.cvtColor( self.frame, cv2.COLOR_BGR2GRAY )
+        self.frame_gray = cv2.equalizeHist( self.frame_gray )
+
+        detectedObject = self.detectObject()
+
+        if detectedObject == None:
+            # do optical flow if we have tracks
+            self.runOpticalFlow()
+            self.filterOutliers( 4 )
+            self.reDetect( False, 0 )
+            trackData = self.drawAndGetTrack()
+        else:
+#            import pdb; pdb.set_trace()
+            self.userRect = [ [ detectedObject[0],
+                                detectedObject[1] ],
+                              [ detectedObject[0] + detectedObject[2],
+                                detectedObject[1] + detectedObject[3] ] ]
+            self.pickFeatures()
+            self.userRect = None
+
+            imageSize = frame.shape
+            imageArea = imageSize[0]*imageSize[1]
+
+            area = detectedObject[2] * detectedObject[3]
+            cx = detectedObject[0] + detectedObject[2]/2
+            cy = detectedObject[1] + detectedObject[3]/2
+
+            xRel = cx*100/imageSize[1]
+            yRel = cy*100/imageSize[0]
+            areaRel = math.sqrt( float( area ) / float( imageArea ) ) * 100
+            trackData = xRel,yRel,areaRel
+
+        self.frame_idx += 1
+        self.prev_gray = self.frame_gray
+
+        return trackData
+	
+    def detectObject( self ):
+        objects = self.cascade.detectMultiScale( self.frame_gray, scaleFactor=1.3,
+                                               minNeighbors=4, minSize=(30, 30),
+                                               flags = cv2.cv.CV_HAAR_SCALE_IMAGE)
+
+        vis = self.frame_gray.copy()
+
+        if len( objects ) > 0:
+            for i in objects:
+                cv2.rectangle( vis,
+                              ( int(i[0]), int(i[1]) ),
+                              ( int(i[0]+i[2]), int(i[1]+i[3]) ),
+                              cv2.cv.CV_RGB(0,255,0), 3, 8, 0)
+
+        cv2.imshow( "objects", vis )
+
+        if len( objects ) > 0:
+            return objects[0]
+        else:
+            return None
+
 def main():
     import sys
     try: video_src = sys.argv[1]
     except: video_src = 0
 
-    tracker = LkTracker()
+    tracker = CascadeTracker( '/home/sameer/FalkorCascade/cascade/cascade.xml' )
     cam = cv2.VideoCapture( video_src )
 
     while True:

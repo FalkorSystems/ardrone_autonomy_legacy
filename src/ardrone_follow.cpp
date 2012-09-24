@@ -87,9 +87,9 @@ class ArdroneFollow
 public:
   ArdroneFollow()
     : current_cmd_(),
-      xPid( 0.01, 0.0, 0.0, 1.0 ), // pos
-      yPid( 0.01, 0.0, 0.0, 1.0 ), // pos
-      zPid( 0.005, 0.0, 0.0, 1.0 ) // pos
+      xPid( 0.025, 0.0, 0.0, 1.0 ), // pos
+      yPid( 0.015, 0.0, 0.0, 1.0 ), // pos
+      zPid( 0.008, 0.0, 0.0, 0.5 ) // pos
   {
     navdata_ = nh_.subscribe( "ardrone/navdata", 1000, &ArdroneFollow::navdataCb, this );
     tracker_ = nh_.subscribe( "ardrone_tracker/found_point", 1, &ArdroneFollow::foundpointCb, this );

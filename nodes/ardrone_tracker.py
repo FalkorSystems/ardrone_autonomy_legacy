@@ -24,7 +24,7 @@ class ardroneTracker:
     cv.NamedWindow("Image window", 1)
     self.bridge = CvBridge()
     self.image_sub = rospy.Subscriber("/ardrone/front/image_raw",Image,self.callback)
-    self.tracker = tracker()
+    self.tracker = tracker
 
   def callback(self,data):
     try:
@@ -53,9 +53,10 @@ class ardroneTracker:
 
 def main():
   rospy.init_node( 'ardrone_tracker' )
-  ardroneTracker(tracker.LkTracker)
-#  ardroneTracker(tracker.dummyTracker)
-#  ardroneTracker( tracker.faceTracker )
+#  ardroneTracker(tracker.LkTracker() )
+#  ardroneTracker(tracker.DummyTracker() )
+#            '/usr/local/share/OpenCV/haarcascades/haarcascade_frontalface_alt.xml'
+  ardroneTracker( tracker.CascadeTracker( '/home/sameer/FalkorCascade/cascade/cascade.xml' ) )
   try:
     rospy.spin()
   except KeyboardInterrupt:
