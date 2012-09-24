@@ -1,6 +1,10 @@
 <launch>
   <node name="ardrone_driver" pkg="ardrone_autonomy" type="ardrone_driver" />
-  <node name="ardrone_tracker" pkg="ardrone_autonomy" type="ardrone_tracker.py" />
+
+  <node name="ardrone_tracker" pkg="ardrone_autonomy" type="ardrone_tracker.py" >
+    <param name="cascadefile" value="$(find ardrone_autonomy)/cascade/haarcascade_falkorlogo.xml" />
+  </node>
+
   <node name="image_view_raw" pkg="image_view" type="image_view">
     <remap from="image" to="/ardrone/front/image_raw" />
   </node>

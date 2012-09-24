@@ -56,7 +56,13 @@ def main():
 #  ardroneTracker(tracker.LkTracker() )
 #  ardroneTracker(tracker.DummyTracker() )
 #            '/usr/local/share/OpenCV/haarcascades/haarcascade_frontalface_alt.xml'
-  ardroneTracker( tracker.CascadeTracker( '/home/sameer/FalkorCascade/cascade/cascade.xml' ) )
+
+  cascade_file = rospy.get_param( '~cascadefile', 'NULL' )
+  if cascade_file == 'NULL':
+    print "Must set cascadefile parameter!"
+    exit
+
+  ardroneTracker( tracker.CascadeTracker( cascade_file ) )
   try:
     rospy.spin()
   except KeyboardInterrupt:
