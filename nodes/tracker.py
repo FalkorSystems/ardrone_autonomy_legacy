@@ -247,7 +247,7 @@ class LkTracker:
             xRel = cx*100/imageSize[1]
             yRel = cy*100/imageSize[0]
             areaRel = math.sqrt( float( area ) / float( imageArea ) ) * 100
-            return xRel,yRel,areaRel
+            return xRel,yRel,areaRel,cx,cy
         else:
             return None
 
@@ -267,6 +267,7 @@ class LkTracker:
 class CascadeTracker( LkTracker ):
     def __init__( self, cascadeFn ):
         self.cascade = cv2.CascadeClassifier( cascadeFn )
+        self.trackData = None
 
         LkTracker.__init__( self )
 
@@ -278,14 +279,19 @@ class CascadeTracker( LkTracker ):
         self.frame_gray = cv2.cvtColor( self.frame, cv2.COLOR_BGR2GRAY )
         self.frame_gray = cv2.equalizeHist( self.frame_gray )
 
+        # do optical flow if we have it
+        self.runOpticalFlow()
+        self.trackData = self.drawAndGetTrack()
+
+        # now look for the object
         detectedObject = self.detectObject()
 
+        # if we don't have it redetect optical flow
         if detectedObject == None:
-            # do optical flow if we have tracks
-            self.runOpticalFlow()
             self.filterOutliers( 4 )
             self.reDetect( False, 0 )
-            trackData = self.drawAndGetTrack()
+
+        # If we do have it, then re-select optical flow features
         else:
 #            import pdb; pdb.set_trace()
             self.userRect = [ [ detectedObject[0],
@@ -293,29 +299,45 @@ class CascadeTracker( LkTracker ):
                               [ detectedObject[0] + detectedObject[2],
                                 detectedObject[1] + detectedObject[3] ] ]
             self.pickFeatures()
+
+            # Add points at the corners
+            corners = [ [ ( detectedObject[0], detectedObject[1] ) ],
+                        [ ( detectedObject[0] + detectedObject[2],
+                            detectedObject[1] ) ],
+                        [ ( detectedObject[0],
+                            detectedObject[1] + detectedObject[3] ) ],
+                        [ ( detectedObject[0] + detectedObject[2],
+                            detectedObject[1] + detectedObject[3] ) ]
+                        ]
+
+            self.tracks.extend( corners )
+
             self.userRect = None
+            self.trackData = self.drawAndGetTrack()
 
-            imageSize = frame.shape
-            imageArea = imageSize[0]*imageSize[1]
+            # imageSize = frame.shape
+            # imageArea = imageSize[0]*imageSize[1]
 
-            area = detectedObject[2] * detectedObject[3]
-            cx = detectedObject[0] + detectedObject[2]/2
-            cy = detectedObject[1] + detectedObject[3]/2
+            # area = detectedObject[2] * detectedObject[3]
+            # cx = detectedObject[0] + detectedObject[2]/2
+            # cy = detectedObject[1] + detectedObject[3]/2
 
-            xRel = cx*100/imageSize[1]
-            yRel = cy*100/imageSize[0]
-            areaRel = math.sqrt( float( area ) / float( imageArea ) ) * 100
-            trackData = xRel,yRel,areaRel
+            # xRel = cx*100/imageSize[1]
+            # yRel = cy*100/imageSize[0]
+            # areaRel = math.sqrt( float( area ) / float( imageArea ) ) * 100
+            # trackData = xRel,yRel,areaRel
 
         self.frame_idx += 1
         self.prev_gray = self.frame_gray
 
-        return trackData
+        return self.trackData
 	
     def detectObject( self ):
-        objects = self.cascade.detectMultiScale( self.frame_gray, scaleFactor=1.3,
-                                               minNeighbors=4, minSize=(30, 30),
-                                               flags = cv2.cv.CV_HAAR_SCALE_IMAGE)
+        objects = self.cascade.detectMultiScale( self.frame_gray,
+                                                 scaleFactor=1.3,
+                                                 minNeighbors=4,
+                                                 minSize=(15, 15),
+                                                 flags = cv2.cv.CV_HAAR_SCALE_IMAGE)
 
         vis = self.frame_gray.copy()
 
@@ -328,8 +350,20 @@ class CascadeTracker( LkTracker ):
 
         cv2.imshow( "objects", vis )
 
+        # if we have only one object return that
+        # or if we have no trackData, return the first object
+        # if we have trackData and multiple objects, return the object
+        # closest to the trackData
         if len( objects ) > 0:
-            return objects[0]
+            if len( objects ) == 1 or not self.trackData:
+                return objects[0]
+            else:
+                distances_squared = ( np.square(objects[:,0]+objects[:,2]/2 -
+                                                self.trackData[3]) +
+                                      np.square(objects[:,1]+objects[:,2]/2 -
+                                                self.trackData[4]) )
+                min_index = np.argmin( distances_squared )
+                return objects[min_index]
         else:
             return None
 
@@ -338,7 +372,8 @@ def main():
     try: video_src = sys.argv[1]
     except: video_src = 0
 
-    tracker = CascadeTracker( '/home/sameer/FalkorCascade/cascade/cascade.xml' )
+    tracker = CascadeTracker(
+        '/home/sameer/ros-ws/sandbox/ardrone_autonomy/cascade/haarcascade_falkorlogopaper.xml' )
     cam = cv2.VideoCapture( video_src )
 
     while True:

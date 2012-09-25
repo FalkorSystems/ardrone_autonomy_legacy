@@ -35,7 +35,7 @@ class ardroneTracker:
     numpy_image = np.asarray( cv_image )
     trackData = self.tracker.track( numpy_image )
     if trackData:
-      areaGoal = 20.0
+      areaGoal = 10.0
 
       x,y,z = trackData[0],trackData[1],trackData[2]/areaGoal*50
 

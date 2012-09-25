@@ -87,7 +87,7 @@ class ArdroneFollow
 public:
   ArdroneFollow()
     : current_cmd_(),
-      xPid( 0.025, 0.0, 0.0, 1.0 ), // pos
+      xPid( 0.015, 0.0, 0.0, 1.0 ), // pos
       yPid( 0.015, 0.0, 0.0, 1.0 ), // pos
       zPid( 0.008, 0.0, 0.0, 0.5 ) // pos
   {

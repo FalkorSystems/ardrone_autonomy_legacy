@@ -2,7 +2,7 @@
   <node name="ardrone_driver" pkg="ardrone_autonomy" type="ardrone_driver" />
 
   <node name="ardrone_tracker" pkg="ardrone_autonomy" type="ardrone_tracker.py" >
-    <param name="cascadefile" value="$(find ardrone_autonomy)/cascade/haarcascade_falkorlogo.xml" />
+    <param name="cascadefile" value="$(find ardrone_autonomy)/cascade/haarcascade_falkorlogotshirt.xml" />
   </node>
 
   <node name="image_view_raw" pkg="image_view" type="image_view">
@@ -13,7 +13,7 @@
 
   <param name="joy_node/dev" value="/dev/input/js1" />
   <node name="joy_node" pkg="joy" type="joy_node" />
-  <node name="record" pkg="rosbag" type="record" args="-e /ardrone/front/image_raw" />
+<!--  <node name="record" pkg="rosbag" type="record" args="-e /ardrone/front/image_raw" /> -->
 
 <!--  <node pkg="rxtools" type="rxplot" name="plot_cmd" args="/cmd_vel/linear/x:y:z,/cmd_vel/angular/z" /> -->
 <!--  <node pkg="rxtools" type="rxplot" name="plot_pos" args="/ardrone_tracker/found_point/x:y:z" /> -->
