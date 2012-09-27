@@ -9,7 +9,8 @@
 
 class PidControl
 {
-  double setPoint_;
+  double setPointMax_;
+  double setPointMin_;
   double Kp_;
   double Ti_;
   double Td_;
@@ -28,7 +29,17 @@ public:
 
   void setSetPoint( double setPoint )
   {
-    setPoint_ = setPoint;
+    setPointMax_ = setPointMin_ = setPoint;
+  }
+
+  void setSetPointMax( double setPointMax )
+  {
+    setPointMax_ = setPointMax;
+  }
+
+  void setSetPointMin( double setPointMin )
+  {
+    setPointMin_ = setPointMin;
   }
 
   void setKp( double Kp )
@@ -48,7 +59,20 @@ public:
 
   double getOutput( double PV, ros::Duration Dt )
   {
-    double error = setPoint_ - PV;
+    double error;
+
+    if( PV < setPointMax_ && PV > setPointMin_ )
+      error = 0;
+    else
+      {
+	double errorFromMax = setPointMax_ - PV;
+	double errorFromMin = setPointMin_ - PV;
+
+	if( fabs( errorFromMax ) > fabs( errorFromMin ) )
+	  error = errorFromMin;
+	else
+	  error = errorFromMax;
+      }
 
     integral_ += error * Dt.toSec();
     double derivative = ( error - preError_ ) / Dt.toSec();
@@ -102,7 +126,8 @@ public:
 
     xPid.setSetPoint( 50.0 );
     yPid.setSetPoint( 50.0 );
-    zPid.setSetPoint( 50.0 );
+    zPid.setSetPointMin( 40.0 );
+    zPid.setSetPointMax( 60.0 );
   }
 
   ~ArdroneFollow()
