@@ -97,7 +97,7 @@ class LkTracker:
 #        import pdb; pdb.set_trace()
 
         cv2.rectangle( mask, tuple( self.userRect[0] ), tuple( self.userRect[1] ), 255, -1 )
-        cv2.imshow( 'userMask', mask )
+#        cv2.imshow( 'userMask', mask )
 
         p = cv2.goodFeaturesToTrack( self.frame_gray, mask = mask, **feature_params )
         if p is not None:
@@ -348,7 +348,7 @@ class CascadeTracker( LkTracker ):
                               ( int(i[0]+i[2]), int(i[1]+i[3]) ),
                               cv2.cv.CV_RGB(0,255,0), 3, 8, 0)
 
-        cv2.imshow( "objects", vis )
+#        cv2.imshow( "objects", vis )
 
         # if we have only one object return that
         # or if we have no trackData, return the first object

@@ -5,7 +5,7 @@
     <param name="cascadefile" value="$(find ardrone_autonomy)/cascade/haarcascade_falkorlogotshirt.xml" />
   </node>
 
-  <node name="image_view_raw" pkg="image_view" type="image_view">
+  <node name="extract_images" pkg="image_view" type="extract_images">
     <remap from="image" to="/ardrone/front/image_raw" />
   </node>
 

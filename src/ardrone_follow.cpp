@@ -2,6 +2,7 @@
 #include<geometry_msgs/Point.h>
 #include<geometry_msgs/Twist.h>
 #include<ardrone_autonomy/Navdata.h>
+#include<ardrone_autonomy/LedAnim.h>
 #include<std_msgs/Empty.h>
 #include<math.h>
 
@@ -15,10 +16,10 @@ class PidControl
   double Ti_;
   double Td_;
 
+  double outputLimit_;
+
   double preError_;
   double integral_;
-
-  double outputLimit_;
 
 public:
   PidControl( double Kp, double Ti, double Td, double outputLimit ) :
@@ -83,7 +84,6 @@ public:
 
     double limitedOutput = fmin( fmax( output, -outputLimit_ ),
 				 outputLimit_ );
- 
     return( limitedOutput );
   }
 };
@@ -108,35 +108,57 @@ class ArdroneFollow
 
   PidControl xPid, yPid, zPid;
 
+  ros::ServiceClient ledService_;
+  int lastAnim_;
+
 public:
   ArdroneFollow()
     : current_cmd_(),
-      xPid( 0.015, 0.0, 0.0, 1.0 ), // pos
-      yPid( 0.015, 0.0, 0.0, 1.0 ), // pos
-      zPid( 0.008, 0.0, 0.0, 0.5 ) // pos
+      xPid( 0.020, 0.0, 0.0, 100.0 ), // pos
+      yPid( 0.020, 0.0, 0.0, 100.0 ), // pos
+      zPid( 0.500, 0.0, 0.0, 50.0 ), // pos
+      lastAnim_( -1 )
   {
     navdata_ = nh_.subscribe( "ardrone/navdata", 1000, &ArdroneFollow::navdataCb, this );
     tracker_ = nh_.subscribe( "ardrone_tracker/found_point", 1, &ArdroneFollow::foundpointCb, this );
     cmd_vel_ = nh_.advertise<geometry_msgs::Twist>( "cmd_vel", 1 );
-    timer_ = nh_.createTimer( ros::Duration( 1 ), &ArdroneFollow::timerCb, this );
+    timer_ = nh_.createTimer( ros::Duration( 0.1 ), &ArdroneFollow::timerCb, this );
 
     land_pub_ = nh_.advertise<std_msgs::Empty>("ardrone/land", 1);
     takeoff_pub_ = nh_.advertise<std_msgs::Empty>("ardrone/takeoff", 1);
     reset_pub_ = nh_.advertise<std_msgs::Empty>("ardrone/reset", 1);
 
-    xPid.setSetPoint( 50.0 );
-    yPid.setSetPoint( 50.0 );
+    xPid.setSetPointMin( 40.0 );
+    xPid.setSetPointMax( 60.0 );
+    yPid.setSetPointMin( 50.0 );
+    yPid.setSetPointMax( 65.0 );
     zPid.setSetPointMin( 40.0 );
     zPid.setSetPointMax( 60.0 );
+
+    ledService_ = nh_.serviceClient<ardrone_autonomy::LedAnim>( "ardrone/setledanimation" );
   }
 
   ~ArdroneFollow()
   {
   }
 
+  void setLedAnim( int type, int freq = 10 )
+  {
+    if ( lastAnim_ == type )
+      return;
+
+    ardrone_autonomy::LedAnim anim;
+    lastAnim_ = anim.request.type = type;
+    anim.request.freq = 10;
+    anim.request.duration = 3600;
+
+    ledService_.call( anim );
+  }
+
   void takeoff( void )
   {
     takeoff_pub_.publish( std_msgs::Empty() );
+    setLedAnim( 9 ); // RED_SNAKE
   }
 
   void land( void )
@@ -147,6 +169,7 @@ public:
   void reset( void )
   {
     reset_pub_.publish( std_msgs::Empty() );
+    setLedAnim( 6 ); // STANDARD
   }
 
   void navdataCb( const ardrone_autonomy::Navdata &navdata )
@@ -180,6 +203,8 @@ public:
 	current_cmd_ = geometry_msgs::Twist();
 	//	current_cmd_.angular.z = 1.0 / SCALE;
 	//current_cmd_.angular.z = 0.0
+
+	setLedAnim( 0, 2 );
       }
     else
       {
@@ -187,51 +212,16 @@ public:
 	current_cmd_.angular.z = xPid.getOutput( found_point_.x, Dt );
 	current_cmd_.linear.z = yPid.getOutput( found_point_.y, Dt );
 	current_cmd_.linear.x = zPid.getOutput( found_point_.z, Dt );
+
+	setLedAnim( 8, 2 );
       }
 
     cmd_vel_.publish( current_cmd_ );
 
     // then in 0.5s, publish a hover cmd
-        hoverTimer_ = nh_.createTimer( ros::Duration( Dt.toSec() / 2.0 ), &ArdroneFollow::hoverCmdCb, this, /* oneshot = */ true );
+    hoverTimer_ = nh_.createTimer( ros::Duration( Dt.toSec() / 2.0 ), &ArdroneFollow::hoverCmdCb, this, /* oneshot = */ true );
   }
 };
-#ifdef FALSE
-  {    //
-    // If we lost the track, then enter search mode
-    //
-
-    //
-    // Otherwise deal with what we found
-    //
-    if( found_point.z != -1.0 )
-      {
-	current_cmd_ = geometry_msgs::Twist();
-	// If using the front camera
-
-	// go forward towards the target at a rate based on how 
-	// close we are to the center
-	double distance = sqrt( ( found_point.x - 50 ) * ( found_point.x - 50 ) +
-				( found_point.y - 50 ) * ( found_point.y - 50 ) );
-
-
-	//current_cmd_.linear.x = ( 50.0 - distance ) / 50 / SCALE;
-
-	// if found_point.z < 50 start slowing down
-	//current_cmd_.linear.x *= fmin(found_point.z / 50.0, 1.0);
-	current_cmd_.linear.x = 0.0;
-
-	// yaw towards the target based on how far we are
-	current_cmd_.angular.z = - ( found_point.x - 50 ) / 50 / SCALE;
-
-	// climb/descend based on how far we are
-	//current_cmd_.linear.z = - ( found_point.y - 50 ) / 50 / SCALE * 5.0;
-	current_cmd_.linear.z = 0.0;
-      }
-
-    cmd_vel_.publish( current_cmd_ );
-  }
-};
-#endif
 
 int main( int argc, char **argv )
 {
