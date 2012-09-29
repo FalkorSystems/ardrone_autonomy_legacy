@@ -34,7 +34,7 @@ class LkTracker:
         self.mouseDown = False
 
         self.userRect = None
-        cv2.namedWindow( 'LKTracker' )
+        cv2.namedWindow( 'LKTracker', cv2.cv.CV_WINDOW_NORMAL )
         cv2.cv.SetMouseCallback( 'LKTracker', self.on_mouse, None )
 
     def on_mouse( self, event, x, y, flags, param ):

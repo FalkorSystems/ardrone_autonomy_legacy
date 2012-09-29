@@ -2,7 +2,7 @@
   <node name="ardrone_driver" pkg="ardrone_autonomy" type="ardrone_driver" />
 
   <node name="ardrone_tracker" pkg="ardrone_autonomy" type="ardrone_tracker.py" >
-    <param name="cascadefile" value="$(find ardrone_autonomy)/cascade/haarcascade_falkorlogotshirt.xml" />
+    <param name="cascadefile" value="$(find ardrone_autonomy)/cascade/lbpcascade_falkorlogostrict.xml" />
   </node>
 
   <node name="extract_images" pkg="image_view" type="extract_images">

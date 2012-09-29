@@ -122,7 +122,7 @@ public:
     navdata_ = nh_.subscribe( "ardrone/navdata", 1000, &ArdroneFollow::navdataCb, this );
     tracker_ = nh_.subscribe( "ardrone_tracker/found_point", 1, &ArdroneFollow::foundpointCb, this );
     cmd_vel_ = nh_.advertise<geometry_msgs::Twist>( "cmd_vel", 1 );
-    timer_ = nh_.createTimer( ros::Duration( 0.1 ), &ArdroneFollow::timerCb, this );
+    timer_ = nh_.createTimer( ros::Duration( 0.25 ), &ArdroneFollow::timerCb, this );
 
     land_pub_ = nh_.advertise<std_msgs::Empty>("ardrone/land", 1);
     takeoff_pub_ = nh_.advertise<std_msgs::Empty>("ardrone/takeoff", 1);
@@ -132,8 +132,8 @@ public:
     xPid.setSetPointMax( 60.0 );
     yPid.setSetPointMin( 50.0 );
     yPid.setSetPointMax( 65.0 );
-    zPid.setSetPointMin( 40.0 );
-    zPid.setSetPointMax( 60.0 );
+    zPid.setSetPointMin( 47.0 );
+    zPid.setSetPointMax( 53.0 );
 
     ledService_ = nh_.serviceClient<ardrone_autonomy::LedAnim>( "ardrone/setledanimation" );
   }
