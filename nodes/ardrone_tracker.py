@@ -21,7 +21,6 @@ class ardroneTracker:
   def __init__(self, tracker):
     self.point_pub = rospy.Publisher("/ardrone_tracker/found_point", Point )
 
-    cv.NamedWindow("Image window", 1)
     self.bridge = CvBridge()
     self.image_sub = rospy.Subscriber("/ardrone/front/image_raw",Image,self.callback)
     self.tracker = tracker
@@ -35,9 +34,7 @@ class ardroneTracker:
     numpy_image = np.asarray( cv_image )
     trackData = self.tracker.track( numpy_image )
     if trackData:
-      areaGoal = 15.0
-
-      x,y,z = trackData[0],trackData[1],trackData[2]/areaGoal*50
+      x,y,z = trackData[0],trackData[1],trackData[2]
 
       point = Point( x,y,z )
       self.point_pub.publish( point )
@@ -70,4 +67,6 @@ def main():
   cv.DestroyAllWindows()
 
 if __name__ == '__main__':
+#  import cProfile
+#  cProfile.run('main()')
     main()

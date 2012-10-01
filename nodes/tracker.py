@@ -7,6 +7,7 @@ if the tracker does not find an object then it will return None
 import numpy as np
 import math
 import cv2
+import time
 
 lk_params = dict( winSize = ( 30, 30 ),
                   maxLevel = 2,
@@ -32,6 +33,7 @@ class LkTracker:
         self.frame_idx = 0
         self.frame = None
         self.mouseDown = False
+        self.timers = {}
 
         self.userRect = None
         cv2.namedWindow( 'LKTracker', cv2.cv.CV_WINDOW_NORMAL )
@@ -99,7 +101,10 @@ class LkTracker:
         cv2.rectangle( mask, tuple( self.userRect[0] ), tuple( self.userRect[1] ), 255, -1 )
 #        cv2.imshow( 'userMask', mask )
 
+        start = cv2.getTickCount() / cv2.getTickFrequency()
         p = cv2.goodFeaturesToTrack( self.frame_gray, mask = mask, **feature_params )
+        self.timers['GoodFeatures'] = cv2.getTickCount() / cv2.getTickFrequency() - start
+
         if p is not None:
             self.tracks = [ [ (x,y) ] for x, y in np.float32(p).reshape(-1, 2) ]
 
@@ -147,8 +152,10 @@ class LkTracker:
         if len(self.tracks) > 0:
             img0, img1 = self.prev_gray, self.frame_gray
             p0 = np.float32([tr[-1] for tr in self.tracks]).reshape(-1, 1, 2 )
+            start = cv2.getTickCount() / cv2.getTickFrequency()
             p1, st, err = cv2.calcOpticalFlowPyrLK( img0, img1, p0, None, **lk_params )
             p0r, st, err = cv2.calcOpticalFlowPyrLK( img1, img0, p1, None, **lk_params )
+            self.timers['LKTrack'] = cv2.getTickCount() / cv2.getTickFrequency() - start
             
             d = abs( p0-p0r ).reshape(-1, 2).max(-1)
             good = d < 1
@@ -209,7 +216,10 @@ class LkTracker:
                 cv2.circle(mask, (x,y), 5, 0, -1 )
 
 #            cv2.imshow( 'mask', mask )
+            start = cv2.getTickCount() / cv2.getTickFrequency()
             p = cv2.goodFeaturesToTrack( self.frame_gray, mask = mask, **feature_params )
+            self.timers['GoodFeatures'] = cv2.getTickCount() / cv2.getTickFrequency() - start
+
             if p is not None:
                 for x, y in np.float32(p).reshape(-1, 2):
                     self.tracks.append([(x,y)])
@@ -238,6 +248,27 @@ class LkTracker:
 
         if self.userRect != None:
             cv2.rectangle( vis, tuple( self.userRect[0] ), tuple( self.userRect[1] ), ( 255, 255, 255 ) )
+
+        i = 0
+        total = 0
+        for ( timer, time ) in self.timers.items():
+            i += 1
+            total += time
+            cv2.putText( vis, '%s: %.1f ms' % ( timer, time * 1e3 ),
+                         ( 20, i*20 ), cv2.FONT_HERSHEY_PLAIN, 1.0,
+                         (255, 255, 255) )
+            cv2.putText( vis, '%s: %.1f ms' % ( timer, time * 1e3 ),
+                         ( 20, i*20 ), cv2.FONT_HERSHEY_PLAIN, 1.0,
+                         ( 0, 0, 0), thickness = 2 )
+
+
+        i += 1
+        cv2.putText( vis, 'Total: %.1f ms' % ( total * 1e3 ),
+                     ( 20, i*20 ), cv2.FONT_HERSHEY_PLAIN, 1.0,
+                     (255, 255, 255) )
+        cv2.putText( vis, 'Total: %.1f ms' % ( total * 1e3 ),
+                     ( 20, i*20 ), cv2.FONT_HERSHEY_PLAIN, 1.0,
+                     ( 0, 0, 0), thickness = 2 )
 
         cv2.imshow( 'LKTracker', vis )
         if len( self.tracks ) > 2:
@@ -268,6 +299,7 @@ class CascadeTracker( LkTracker ):
     def __init__( self, cascadeFn ):
         self.cascade = cv2.CascadeClassifier( cascadeFn )
         self.trackData = None
+        self.cascade_interval = 30
 
         LkTracker.__init__( self )
 
@@ -283,7 +315,7 @@ class CascadeTracker( LkTracker ):
         self.runOpticalFlow()
         self.trackData = self.drawAndGetTrack()
 
-        # now look for the object
+        # now look for the object every 5th frame
         detectedObject = self.detectObject()
 
         # if we don't have it redetect optical flow
@@ -333,11 +365,17 @@ class CascadeTracker( LkTracker ):
         return self.trackData
 	
     def detectObject( self ):
+        # don't do a cascade every frame
+        if self.frame_idx % self.cascade_interval != 0:
+            return None
+
+        start = cv2.getTickCount() / cv2.getTickFrequency()
         objects = self.cascade.detectMultiScale( self.frame_gray,
                                                  scaleFactor=1.3,
                                                  minNeighbors=4,
                                                  minSize=(15, 15),
                                                  flags = cv2.cv.CV_HAAR_SCALE_IMAGE)
+        self.timers['Cascade'] = cv2.getTickCount() / cv2.getTickFrequency() - start
 
         vis = self.frame_gray.copy()
 

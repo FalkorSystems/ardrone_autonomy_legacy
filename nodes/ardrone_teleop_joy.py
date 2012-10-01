@@ -7,16 +7,16 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
 from std_msgs.msg import Empty
 
-class ardroneTeleopJoy:
+class ArdroneTeleopJoy:
 
     def __init__( self ):
-        self.cmd_vel_pub = rospy.Publisher( "/cmd_vel", Twist )
-        self.land_pub = rospy.Publisher( "/ardrone/land", Empty )
-        self.takeoff_pub = rospy.Publisher( "/ardrone/takeoff", Empty )
-        self.reset_pub = rospy.Publisher( "/ardrone/reset", Empty )
-        self.joy_sub = rospy.Subscriber( "/joy", Joy, self.callback )
+        self.cmd_vel_pub = rospy.Publisher( "cmd_vel", Twist )
+        self.land_pub = rospy.Publisher( "ardrone/land", Empty )
+        self.takeoff_pub = rospy.Publisher( "ardrone/takeoff", Empty )
+        self.reset_pub = rospy.Publisher( "ardrone/reset", Empty )
+        self.joy_sub = rospy.Subscriber( "joy", Joy, self.callback_joy )
 
-    def callback( self, data ):
+    def callback_joy( self, data ):
         empty_msg = Empty()
 
         if data.buttons[12] == 1 and self.last_buttons[12] == 0:
@@ -45,7 +45,7 @@ class ardroneTeleopJoy:
 def main():
   rospy.init_node( 'ardrone_teleop_joy' )
 
-  ardroneTeleopJoy()
+  ArdroneTeleopJoy()
 
   try:
     rospy.spin()
