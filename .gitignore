@@ -16,3 +16,6 @@ Makefile
 
 # Compiled python files
 *.pyc
+
+# emacs files
+*~
