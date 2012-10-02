@@ -45,7 +45,7 @@ class ArdroneFollow:
         self.led_service = rospy.ServiceProxy( "ardrone/setledanimation", LedAnim )
         self.lastAnim = -1
 
-        self.foundpoint = Point( 0, 0, -1 )
+        self.found_point = Point( 0, 0, -1 )
         self.old_cmd = self.current_cmd = Twist()
 
         self.joy_sub = rospy.Subscriber( "joy", Joy, self.callback_joy )
