@@ -18,20 +18,22 @@ from ardrone_autonomy.srv import LedAnim
 
 class ArdroneFollow:
     def __init__( self ):
-        self.navdata_sub = rospy.Subscriber( "ardrone/navdata", Navdata, 
-                                             self.navdata_cb )
         self.tracker_sub = rospy.Subscriber( "ardrone_tracker/found_point",
                                              Point, self.found_point_cb )
         self.cmd_vel_pub = rospy.Publisher( "cmd_vel", Twist )
-        self.timer = rospy.Timer( rospy.Duration( 0.25 ), self.timer_cb, False )
+        self.timer = rospy.Timer( rospy.Duration( 0.10 ), self.timer_cb, False )
 
         self.land_pub = rospy.Publisher( "ardrone/land", Empty )
         self.takeoff_pub = rospy.Publisher( "ardrone/takeoff", Empty )
         self.reset_pub = rospy.Publisher( "ardrone/reset", Empty )
 
-        self.xPid = pid.Pid( 0.020, 0.0, 0.0, 100.0 )
-        self.yPid = pid.Pid( 0.020, 0.0, 0.0, 100.0 )
-        self.zPid = pid.Pid( 0.500, 0.0, 0.0,  50.0 )
+        self.angularZlimit = 3.14 / 2
+        self.linearXlimit = 1.0
+        self.linearZlimit = 2.0
+
+        self.xPid = pid.Pid( 0.020, 0.0, 0.0, self.angularZlimit )
+        self.yPid = pid.Pid( 0.020, 0.0, 0.0, self.linearZlimit )
+        self.zPid = pid.Pid( 0.020, 0.0, 0.0, self.linearXlimit )
 
         self.xPid.setPointMin = 40
         self.xPid.setPointMax = 60
@@ -53,7 +55,6 @@ class ArdroneFollow:
         self.auto_cmd = False
 
         cv2.namedWindow( 'Follow Clues', cv2.cv.CV_WINDOW_NORMAL )
-
 
     def increase_z_setpt( self ):
         self.zPid.setPointMin *= 1.01
@@ -91,11 +92,11 @@ class ArdroneFollow:
         self.current_cmd = Twist()
 
         self.current_cmd.angular.x = self.current_cmd.angular.y = 0
-        self.current_cmd.angular.z = data.axes[2]
+        self.current_cmd.angular.z = data.axes[2] * self.angularZlimit
 
-        self.current_cmd.linear.z = data.axes[3]
-        self.current_cmd.linear.x = data.axes[1]
-        self.current_cmd.linear.y = data.axes[0]
+        self.current_cmd.linear.z = data.axes[3] * self.linearZlimit
+        self.current_cmd.linear.x = data.axes[1] * self.linearXlimit
+        self.current_cmd.linear.y = data.axes[0] * self.linearXlimit
 
         if ( self.current_cmd.linear.x == 0 and
              self.current_cmd.linear.y == 0 and
@@ -131,7 +132,12 @@ class ArdroneFollow:
         self.reset_pub.publish( Empty() )
 
     def navdata_cb( self, data ):
-        pass
+        self.vx = data.vx/1e3
+        self.vy = data.vy/1e3
+        self.vz = data.vz/1e3
+        self.ax = (data.ax*9.82)
+        self.ay = (data.ay*9.82)
+        self.az = (data.az - 1)*9.82
 
     def found_point_cb( self, data ):
         self.found_point = data
@@ -203,8 +209,8 @@ class ArdroneFollow:
             return
 
         self.cmd_vel_pub.publish( self.current_cmd )
-        self.hover_timer = rospy.Timer( rospy.Duration( dt / 2.0 ), self.hover_cmd_cb,
-                                        True )
+#        self.hover_timer = rospy.Timer( rospy.Duration( dt / 2.0 ), self.hover_cmd_cb,
+#                                        True )
 
 
 
