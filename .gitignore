@@ -19,3 +19,17 @@ Makefile
 
 # emacs files
 *~
+
+# bag files
+*.bag
+
+# specific directories
+ARDroneLib/FFMPEG/Includes/
+ARDroneLib/FFMPEG/ffmpeg/
+ARDroneLib/Soft/Build/targets_versions/
+ARDroneLib/Soft/Common/generated_custom.h
+bin/
+build/
+msg_gen/
+srv_gen/
+src/ardrone_autonomy/
