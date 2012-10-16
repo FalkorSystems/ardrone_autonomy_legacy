@@ -5,7 +5,7 @@
     <param name="cascadefile" value="$(find ardrone_autonomy)/cascade/lbpcascade_falkorlogostrict.xml" />
   </node>
 
-  <node name="ardrone_follow" pkg="ardrone_autonomy" type="ardrone_follow.py" />
+  <node name="ardrone_follow" pkg="ardrone_autonomy" type="ardrone_follow.py" output="screen" />
 
   <node name="ardrone_control" pkg="ardrone_autonomy" type="ardrone_control.py" />
 

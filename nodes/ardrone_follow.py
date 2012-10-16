@@ -19,6 +19,10 @@ from ardrone_autonomy.srv import LedAnim
 
 class ArdroneFollow:
     def __init__( self ):
+        self.led_service = rospy.ServiceProxy( "ardrone/setledanimation", LedAnim )
+#        print "waiting for driver to startup"
+#        rospy.wait_for_service( self.led_service )
+
         self.tracker_sub = rospy.Subscriber( "ardrone_tracker/found_point",
                                              Point, self.found_point_cb )
         self.goal_vel_pub = rospy.Publisher( "goal_vel", Twist )
@@ -28,7 +32,6 @@ class ArdroneFollow:
                                                  Image, self.image_cb )
         self.tracker_image = None
 
-        self.cmd_vel_pub = rospy.Publisher( "cmd_vel", Twist )
         self.timer = rospy.Timer( rospy.Duration( 0.10 ), self.timer_cb, False )
 
         self.land_pub = rospy.Publisher( "ardrone/land", Empty )
@@ -41,7 +44,7 @@ class ArdroneFollow:
 
         self.xPid = pid.Pid( 0.020, 0.0, 0.0, self.angularZlimit )
         self.yPid = pid.Pid( 0.020, 0.0, 0.0, self.linearZlimit )
-        self.zPid = pid.Pid( 0.020, 0.0, 0.0, self.linearXlimit )
+        self.zPid = pid.Pid( 0.050, 0.0, 1.0, self.linearXlimit )
 
         self.xPid.setPointMin = 40
         self.xPid.setPointMax = 60
@@ -52,7 +55,6 @@ class ArdroneFollow:
         self.zPid.setPointMin = 17
         self.zPid.setPointMax = 23
 
-        self.led_service = rospy.ServiceProxy( "ardrone/setledanimation", LedAnim )
         self.lastAnim = -1
 
         self.found_point = Point( 0, 0, -1 )
