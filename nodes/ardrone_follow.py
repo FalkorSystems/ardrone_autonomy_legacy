@@ -21,6 +21,8 @@ class ArdroneFollow:
     def __init__( self ):
         self.tracker_sub = rospy.Subscriber( "ardrone_tracker/found_point",
                                              Point, self.found_point_cb )
+        self.found_time = None
+
         self.tracker_img_sub = rospy.Subscriber( "ardrone_tracker/image",
                                                  Image, self.image_cb )
         self.tracker_image = None
@@ -156,6 +158,7 @@ class ArdroneFollow:
 
     def found_point_cb( self, data ):
         self.found_point = data
+        self.found_time = rospy.Time.now()
 
     def hover( self ):
         hoverCmd = Twist()
@@ -209,6 +212,13 @@ class ArdroneFollow:
 
     def timer_cb( self, event ):
         self.draw_picture()
+
+        # If we haven't received a found point in a second, let found_point be
+        # (0,0,-1)
+        if ( self.found_time == None or
+             ( rospy.Time.now() - self.found_time ).to_sec() > 1 ):
+            self.found_point = Point( 0, 0, -1.0 )
+            self.found_time = rospy.Time.now()
 
         if event.last_real == None:
             dt = 0
