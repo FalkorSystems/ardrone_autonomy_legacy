@@ -8,11 +8,12 @@ import math
 import pid
 import cv2
 import numpy as np
+from cv_bridge import CvBridge, CvBridgeError
 
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Empty
-from sensor_msgs.msg import Joy
+from sensor_msgs.msg import Joy, Image
 from ardrone_autonomy.msg import Navdata
 from ardrone_autonomy.srv import LedAnim
 
@@ -21,6 +22,13 @@ class ArdroneFollow:
         self.tracker_sub = rospy.Subscriber( "ardrone_tracker/found_point",
                                              Point, self.found_point_cb )
         self.goal_vel_pub = rospy.Publisher( "goal_vel", Twist )
+        self.found_time = None
+
+        self.tracker_img_sub = rospy.Subscriber( "ardrone_tracker/image",
+                                                 Image, self.image_cb )
+        self.tracker_image = None
+
+        self.cmd_vel_pub = rospy.Publisher( "cmd_vel", Twist )
         self.timer = rospy.Timer( rospy.Duration( 0.10 ), self.timer_cb, False )
 
         self.land_pub = rospy.Publisher( "ardrone/land", Empty )
@@ -38,8 +46,8 @@ class ArdroneFollow:
         self.xPid.setPointMin = 40
         self.xPid.setPointMax = 60
 
-        self.yPid.setPointMin = 50
-        self.yPid.setPointMax = 65
+        self.yPid.setPointMin = 40
+        self.yPid.setPointMax = 60
 
         self.zPid.setPointMin = 17
         self.zPid.setPointMax = 23
@@ -54,7 +62,17 @@ class ArdroneFollow:
         self.manual_cmd = False
         self.auto_cmd = False
 
-        cv2.namedWindow( 'Follow Clues', cv2.cv.CV_WINDOW_NORMAL )
+        self.bridge = CvBridge()
+
+        cv2.namedWindow( 'AR.Drone Follow', cv2.cv.CV_WINDOW_NORMAL )
+
+    def image_cb( self, data ):
+        try:
+            cv_image = self.bridge.imgmsg_to_cv( data, "passthrough" )
+        except CvBridgeError, e:
+            print e
+        
+        self.tracker_image = np.asarray( cv_image )
 
     def increase_z_setpt( self ):
         self.zPid.setPointMin *= 1.01
@@ -141,6 +159,7 @@ class ArdroneFollow:
 
     def found_point_cb( self, data ):
         self.found_point = data
+        self.found_time = rospy.Time.now()
 
     def hover( self ):
         hoverCmd = Twist()
@@ -150,14 +169,18 @@ class ArdroneFollow:
         self.hover()
 
     def draw_picture( self ):
-        vis = np.zeros( ( 360, 640, 3 ), np.uint8);
+        if self.tracker_image == None:
+            return
 
-        cx_min = int(self.xPid.setPointMin * 640 / 100)
-        cx_max = int(self.xPid.setPointMax * 640 / 100)
+        vis = self.tracker_image.copy()
+        (ySize, xSize, depth) = vis.shape
+
+        cx_min = int(self.xPid.setPointMin * xSize / 100)
+        cx_max = int(self.xPid.setPointMax * xSize / 100)
         cx = int( ( cx_min + cx_max ) / 2 )
         
-        cy_min = int(self.yPid.setPointMin * 480 / 100)
-        cy_max = int(self.yPid.setPointMax * 480 / 100)
+        cy_min = int(self.yPid.setPointMin * ySize / 100)
+        cy_max = int(self.yPid.setPointMax * ySize / 100)
         cy = int( ( cy_min + cy_max ) / 2 )
 
         cv2.rectangle( vis, ( cx_min, cy_min ), ( cx_max, cy_max ),
@@ -175,16 +198,28 @@ class ArdroneFollow:
                        ( cx + side_max_half, cy + side_max_half ),
                        ( 255, 255, 0 ) )
 
-        cv2.line( vis, ( 320, 180 ), ( int( 320 - self.current_cmd.angular.z * 320 ),
-                                       int( 180 - self.current_cmd.linear.z * 180  ) ),
-                  ( 0, 255, 0 ),
+        if self.current_cmd.linear.x > 0:
+            line_color = ( 0, 255, 0 )
+        else:
+            line_color = ( 0, 0, 255 )
+
+        cv2.line( vis, ( 320, 180 ), ( int( xSize/2 - self.current_cmd.angular.z * 320 ),
+                                       int( ySize/2 - self.current_cmd.linear.z * 180  ) ),
+                  line_color,
                   min( max( int( abs( self.current_cmd.linear.x ) * 255 ), 0 ), 255 ) )
 
-        cv2.imshow( 'Follow Clues', vis )
+        cv2.imshow( 'AR.Drone Follow', vis )
         cv2.waitKey( 1 )
 
     def timer_cb( self, event ):
         self.draw_picture()
+
+        # If we haven't received a found point in a second, let found_point be
+        # (0,0,-1)
+        if ( self.found_time == None or
+             ( rospy.Time.now() - self.found_time ).to_sec() > 1 ):
+            self.found_point = Point( 0, 0, -1.0 )
+            self.found_time = rospy.Time.now()
 
         if event.last_real == None:
             dt = 0

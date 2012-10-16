@@ -23,6 +23,8 @@ class ardroneTracker:
 
     self.bridge = CvBridge()
     self.image_sub = rospy.Subscriber("/ardrone/front/image_raw",Image,self.callback)
+    self.image_pub = rospy.Publisher( "/ardrone_tracker/image", Image )
+
     self.tracker = tracker
 
   def callback(self,data):
@@ -41,12 +43,12 @@ class ardroneTracker:
     else:
       self.point_pub.publish( Point( 0, 0, -1 ) )
 
-    cv2.waitKey( 10 )
-
-    # try:
-    #   self.image_pub.publish(self.bridge.cv_to_imgmsg(cv_image, "bgr8"))
-    # except CvBridgeError, e:
-    #   print e
+    try:
+      vis = self.tracker.get_vis()
+      image_message = self.bridge.cv_to_imgmsg(cv2.cv.fromarray( vis ), encoding="passthrough")
+      self.image_pub.publish( image_message )
+    except CvBridgeError, e:
+      print e
 
 def main():
   rospy.init_node( 'ardrone_tracker' )
