@@ -19,28 +19,32 @@ from ardrone_autonomy.srv import LedAnim
 
 class ArdroneFollow:
     def __init__( self ):
+        self.led_service = rospy.ServiceProxy( "ardrone/setledanimation", LedAnim )
+#        print "waiting for driver to startup"
+#        rospy.wait_for_service( self.led_service )
+
         self.tracker_sub = rospy.Subscriber( "ardrone_tracker/found_point",
                                              Point, self.found_point_cb )
+        self.goal_vel_pub = rospy.Publisher( "goal_vel", Twist )
         self.found_time = None
 
         self.tracker_img_sub = rospy.Subscriber( "ardrone_tracker/image",
                                                  Image, self.image_cb )
         self.tracker_image = None
 
-        self.cmd_vel_pub = rospy.Publisher( "cmd_vel", Twist )
         self.timer = rospy.Timer( rospy.Duration( 0.10 ), self.timer_cb, False )
 
         self.land_pub = rospy.Publisher( "ardrone/land", Empty )
         self.takeoff_pub = rospy.Publisher( "ardrone/takeoff", Empty )
         self.reset_pub = rospy.Publisher( "ardrone/reset", Empty )
 
-        self.angularZlimit = 3.14 / 2
+        self.angularZlimit = 3.141592 / 2
         self.linearXlimit = 1.0
         self.linearZlimit = 2.0
 
         self.xPid = pid.Pid( 0.020, 0.0, 0.0, self.angularZlimit )
         self.yPid = pid.Pid( 0.020, 0.0, 0.0, self.linearZlimit )
-        self.zPid = pid.Pid( 0.020, 0.0, 0.0, self.linearXlimit )
+        self.zPid = pid.Pid( 0.050, 0.0, 1.0, self.linearXlimit )
 
         self.xPid.setPointMin = 40
         self.xPid.setPointMax = 60
@@ -51,7 +55,6 @@ class ArdroneFollow:
         self.zPid.setPointMin = 17
         self.zPid.setPointMax = 23
 
-        self.led_service = rospy.ServiceProxy( "ardrone/setledanimation", LedAnim )
         self.lastAnim = -1
 
         self.found_point = Point( 0, 0, -1 )
@@ -124,7 +127,7 @@ class ArdroneFollow:
             self.setLedAnim( 9 )
             self.manual_cmd = True
 
-        self.cmd_vel_pub.publish( self.current_cmd )
+        self.goal_vel_pub.publish( self.current_cmd )
 
     def setLedAnim( self, animType, freq = 10 ):
         if self.lastAnim == type:
@@ -162,7 +165,7 @@ class ArdroneFollow:
 
     def hover( self ):
         hoverCmd = Twist()
-        self.cmd_vel_pub.publish( hoverCmd )
+        self.goal_vel_pub.publish( hoverCmd )
 
     def hover_cmd_cb( self, data ):
         self.hover()
@@ -242,10 +245,7 @@ class ArdroneFollow:
             self.setLedAnim( 9 )
             return
 
-        self.cmd_vel_pub.publish( self.current_cmd )
-#        self.hover_timer = rospy.Timer( rospy.Duration( dt / 2.0 ), self.hover_cmd_cb,
-#                                        True )
-
+        self.goal_vel_pub.publish( self.current_cmd )
 
 
 def main():
