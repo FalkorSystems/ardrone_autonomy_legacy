@@ -7,6 +7,7 @@
 
   <node name="ardrone_follow" pkg="ardrone_autonomy" type="ardrone_follow.py" />
 
+  <node name="ardrone_control" pkg="ardrone_autonomy" type="ardrone_control.py" />
 
   <node name="joy_node" pkg="joy" type="joy_node" >
     <param name="dev" value="/dev/input/js1" />

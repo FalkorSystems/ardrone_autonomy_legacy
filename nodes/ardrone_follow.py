@@ -20,14 +20,14 @@ class ArdroneFollow:
     def __init__( self ):
         self.tracker_sub = rospy.Subscriber( "ardrone_tracker/found_point",
                                              Point, self.found_point_cb )
-        self.cmd_vel_pub = rospy.Publisher( "cmd_vel", Twist )
+        self.goal_vel_pub = rospy.Publisher( "goal_vel", Twist )
         self.timer = rospy.Timer( rospy.Duration( 0.10 ), self.timer_cb, False )
 
         self.land_pub = rospy.Publisher( "ardrone/land", Empty )
         self.takeoff_pub = rospy.Publisher( "ardrone/takeoff", Empty )
         self.reset_pub = rospy.Publisher( "ardrone/reset", Empty )
 
-        self.angularZlimit = 3.14 / 2
+        self.angularZlimit = 3.141592 / 2
         self.linearXlimit = 1.0
         self.linearZlimit = 2.0
 
@@ -107,7 +107,7 @@ class ArdroneFollow:
             self.setLedAnim( 9 )
             self.manual_cmd = True
 
-        self.cmd_vel_pub.publish( self.current_cmd )
+        self.goal_vel_pub.publish( self.current_cmd )
 
     def setLedAnim( self, animType, freq = 10 ):
         if self.lastAnim == type:
@@ -144,7 +144,7 @@ class ArdroneFollow:
 
     def hover( self ):
         hoverCmd = Twist()
-        self.cmd_vel_pub.publish( hoverCmd )
+        self.goal_vel_pub.publish( hoverCmd )
 
     def hover_cmd_cb( self, data ):
         self.hover()
@@ -208,10 +208,7 @@ class ArdroneFollow:
             self.setLedAnim( 9 )
             return
 
-        self.cmd_vel_pub.publish( self.current_cmd )
-#        self.hover_timer = rospy.Timer( rospy.Duration( dt / 2.0 ), self.hover_cmd_cb,
-#                                        True )
-
+        self.goal_vel_pub.publish( self.current_cmd )
 
 
 def main():

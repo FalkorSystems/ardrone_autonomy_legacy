@@ -13,7 +13,7 @@ class ArdroneControl:
     def __init__( self ):
         self.nav_sub = rospy.Subscriber( "ardrone/navdata", Navdata, self.callback_navdata )
         self.cmd_vel_pub = rospy.Publisher( "cmd_vel", Twist )
-        self.cmd_vel_sub = rospy.Subscriber( "cmd_vel_interm", Twist, self.callback_cmd_vel )
+        self.goal_vel_sub = rospy.Subscriber( "goal_vel", Twist, self.callback_goal_vel )
 
         # gain_p, gain_i, gain_d
         self.linearxpid = pid.Pid2( 0.5, 0.0, 0.5 )
@@ -21,10 +21,10 @@ class ArdroneControl:
 
         self.vx = self.vy = self.vz = self.ax = self.ay = self.az = 0.0
         self.last_time = None
-        self.cmd_vel = Twist()
+        self.goal_vel = Twist()
 
-    def callback_cmd_vel( self, data ):
-        self.cmd_vel = data
+    def callback_goal_vel( self, data ):
+        self.goal_vel = data
 
     def callback_navdata( self, data ):
         self.vx = data.vx/1e3
@@ -49,10 +49,10 @@ class ArdroneControl:
         cmd = Twist()
         cmd.angular.y = 0
         cmd.angular.x = 0
-        cmd.angular.z = self.cmd_vel.angular.z
-        cmd.linear.z = self.cmd_vel.linear.z
-        cmd.linear.x = self.linearxpid.update( self.cmd_vel.linear.x, self.vx, 0.0, dt )
-        cmd.linear.y = self.linearypid.update( self.cmd_vel.linear.y, self.vy, 0.0, dt )
+        cmd.angular.z = self.goal_vel.angular.z
+        cmd.linear.z = self.goal_vel.linear.z
+        cmd.linear.x = self.linearxpid.update( self.goal_vel.linear.x, self.vx, 0.0, dt )
+        cmd.linear.y = self.linearypid.update( self.goal_vel.linear.y, self.vy, 0.0, dt )
 
         self.cmd_vel_pub.publish( cmd )
 
