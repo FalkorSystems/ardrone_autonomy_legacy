@@ -319,8 +319,6 @@ class CascadeTracker( LkTracker ):
     def track( self, frame ):
         self.frame = frame # cv2.pyrDown( frame )
         self.frame_gray = cv2.cvtColor( self.frame, cv2.COLOR_BGR2GRAY )
-        # invert
-        self.frame_gray = np.uint8( 255-self.frame_gray )
         self.frame_gray = cv2.equalizeHist( self.frame_gray )
 
         # do optical flow if we have it
