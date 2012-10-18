@@ -429,8 +429,8 @@ def main():
         if ret:
             trackData = tracker.track( frame )
 
-        if trackData:
-            print trackData
+            if trackData:
+                print trackData
 
         ch = 0xFF & cv2.waitKey(1)
         if ch == 27:
