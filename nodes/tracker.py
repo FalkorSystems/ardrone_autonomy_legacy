@@ -36,8 +36,10 @@ class LkTracker:
         self.timers = {}
 
         self.userRect = None
-        cv2.namedWindow( 'LKTracker', cv2.cv.CV_WINDOW_NORMAL )
-        cv2.cv.SetMouseCallback( 'LKTracker', self.on_mouse, None )
+#        cv2.namedWindow( 'LKTracker', cv2.cv.CV_WINDOW_NORMAL )
+#        cv2.cv.SetMouseCallback( 'LKTracker', self.on_mouse, None )
+
+        self.vis = None
 
     def on_mouse( self, event, x, y, flags, param ):
         if self.frame is None:
@@ -225,7 +227,7 @@ class LkTracker:
                     self.tracks.append([(x,y)])
 
     def drawAndGetTrack( self ):
-        vis = self.equalizeHist( self.frame.copy() )
+        vis = self.frame.copy()
         
         if len(self.tracks) > 0:
             cv2.polylines( vis, [ np.int32(tr) for tr in self.tracks ], False, ( 0, 255, 0 ) )
@@ -244,6 +246,7 @@ class LkTracker:
                           boundingRect[1] + boundingRect[3]/2 )
 
                 cv2.rectangle( vis, (x0,y0), (x1,y1), (0,255,255), 3, 8, 0 )
+
                 cv2.circle( vis, (cx,cy), 5, (0,255,255), -1, 8, 0 )
 
         if self.userRect != None:
@@ -270,7 +273,11 @@ class LkTracker:
                      ( 20, i*20 ), cv2.FONT_HERSHEY_PLAIN, 1.0,
                      ( 0, 0, 0), thickness = 2 )
 
-        cv2.imshow( 'LKTracker', vis )
+        self.vis = vis.copy()
+
+#        cv2.imshow( 'LKTracker', self.vis )
+#        cv2.waitKey( 1 )
+
         if len( self.tracks ) > 2:
             imageSize = self.frame.shape
             imageArea = imageSize[0]*imageSize[1]
@@ -281,6 +288,9 @@ class LkTracker:
             return xRel,yRel,areaRel,cx,cy
         else:
             return None
+
+    def get_vis( self ):
+        return self.vis
 
     def track(self, frame):
         self.initializeFrame( frame )
@@ -419,8 +429,8 @@ def main():
         if ret:
             trackData = tracker.track( frame )
 
-        if trackData:
-            print trackData
+            if trackData:
+                print trackData
 
         ch = 0xFF & cv2.waitKey(1)
         if ch == 27:

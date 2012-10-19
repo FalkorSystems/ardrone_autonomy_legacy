@@ -2,11 +2,12 @@
   <node name="ardrone_driver" pkg="ardrone_autonomy" type="ardrone_driver" />
 
   <node name="ardrone_tracker" pkg="ardrone_autonomy" type="ardrone_tracker.py"  output="screen" >
-    <param name="cascadefile" value="$(find ardrone_autonomy)/cascade/lbpcascade_falkorlogostrict.xml" />
+    <param name="cascadefile" value="$(find ardrone_autonomy)/cascade/lbpcascade_falkorlogobw.xml" />
   </node>
 
-  <node name="ardrone_follow" pkg="ardrone_autonomy" type="ardrone_follow.py" />
+  <node name="ardrone_follow" pkg="ardrone_autonomy" type="ardrone_follow.py" output="screen" />
 
+  <node name="ardrone_control" pkg="ardrone_autonomy" type="ardrone_control.py" />
 
   <node name="joy_node" pkg="joy" type="joy_node" >
     <param name="dev" value="/dev/input/js1" />
