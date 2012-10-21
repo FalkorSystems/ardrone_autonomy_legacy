@@ -44,7 +44,7 @@ class ArdroneFollow:
 
         self.xPid = pid.Pid( 0.020, 0.0, 0.0, self.angularZlimit )
         self.yPid = pid.Pid( 0.020, 0.0, 0.0, self.linearZlimit )
-        self.zPid = pid.Pid( 0.050, 0.0, 1.0, self.linearXlimit )
+        self.zPid = pid.Pid( 0.070, 0.0, 0.0, self.linearXlimit )
 
         self.xPid.setPointMin = 40
         self.xPid.setPointMax = 60
